@@ -1,3 +1,7 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
 [project]
 name = "arc-agi-compression-experiments"
 version = "0.1.0"
@@ -9,10 +13,16 @@ dependencies = [
     "matplotlib>=3.10.1",
     "numpy>=2.2.3",
     "pandas>=2.2.3",
+    "scikit-learn>=1.6.1",
     "seaborn>=0.13.2",
     "torch>=2.6.0",
     "torchvision>=0.21.0",
 ]
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+packages = ["models"]  # List your packages here, or use find-packages
+
 
 [dependency-groups]
 dev = [

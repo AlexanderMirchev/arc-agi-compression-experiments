@@ -1,1 +1,0 @@
-# arc-agi-compression-experiments

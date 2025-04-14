@@ -7519,7 +7519,8 @@ a.anchor-link {
 <h1 id="Personal-Information">Personal Information<a class="anchor-link" href="#Personal-Information">¶</a></h1><p>Name: <strong>Aleksander Mirchev</strong></p>
 <p>StudentID: <strong>15785327</strong></p>
 <p>Email: <a href="alex.mirchev2@student.uva.nl"><strong>alex.mirchev2@student.uva.nl</strong></a></p>
-<p>Submitted on: <strong>18.03.2025</strong></p>
+<p>Submitted on: <strong>19.03.2025</strong></p>
+<p>Github link: <strong><a href="https://github.com/AlexanderMirchev/arc-agi-compression-experiments/blob/master/src/eda/EDA.ipynb">https://github.com/AlexanderMirchev/arc-agi-compression-experiments/blob/master/src/eda/EDA.ipynb</a></strong></p>
 </div>
 </div>
 </div>
@@ -7542,16 +7543,9 @@ a.anchor-link {
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
-<h1 id="Data-Description">Data Description<a class="anchor-link" href="#Data-Description">¶</a></h1><p><strong>Present here the results of your exploratory data analysis. Note that there is no need to have a "story line" - it is more important that you show your understanding of the data and the methods that you will be using in your experiments (i.e. your methodology).</strong></p>
-<p><strong>As an example, you could show data, label, or group balances, skewness, and basic characterizations of the data. Information about data frequency and distributions as well as results from reduction mechanisms such as PCA could be useful. Furthermore, indicate outliers and how/why you are taking them out of your samples, if you do so.</strong></p>
-<p><strong>The idea is, that you conduct this analysis to a) understand the data better but b) also to verify the shapes of the distributions and whether they meet the assumptions of the methods that you will attempt to use. Finally, make good use of images, diagrams, and tables to showcase what information you have extracted from your data.</strong></p>
-<p><strong>TODO</strong></p>
-<p>As you can see, you are in a jupyter notebook environment here. This means that you should focus little on writing text and more on actually exploring your data. If you need to, you can use the amsmath environment in-line: $e=mc^2$ or also in separate equations such as here:</p>
-<p>\begin{equation}
-    e=mc^2 \mathrm{\space where \space} e,m,c\in \mathbb{R}
-\end{equation}</p>
-<p>Furthermore, you can insert images such as your data aggregation diagrams like this:</p>
-<p><img alt="image" src="example.png"/></p>
+<h1 id="Data-Description">Data Description<a class="anchor-link" href="#Data-Description">¶</a></h1><p>The ARC-AGI public dataset consists of 400 unique tasks, each of them consisting of (varying number of) input-output pair training sample grids and a test input grid, from which the test output grid must be inferred. Each grid consist of "pixels" of one of 10 colors (as defined below). The goal of this exploratory analysis is to give a brief overview of how many training samples are there per task, how the input-output grid shapes are distributed and are there apparent classes of tasks.</p>
+<p>From Analysis 1 the grids are predominantly square, ranging from 2x2 to 30x30 and the grids preserve their shape after the transformation roughly half of the time. From Analysis 2 we gather that tasks have from 2 to 7 training sample pairs, possibly depending on the complexity of the task (more samples -&gt; less ambiguity). From Analysis 3 we discover that usually tasks do not change too much from input to output (assuming the grid size hasn't changed, these cases are ignored) with the majority of the grids changing less than 20% in a transformation.</p>
+<p>Analysis 4 and 5 are more concerned about the construction of the training samples and how objects are defined in the grids. The intuition was that tasks such as object movement, scaling, etc. are the most common and more often infering the task would consist of specific object creation/transformation/removal. To determine what an object is the following definition is used: "neighbouring pixels of the same colors represent a single object". However, logically objects are naturally in some composition and therefore background should not be classified as an object. Most commonly the black color (0) is used for backgrounds in ARC-AGI tasks, however it turned out that 33 of the tasks did not have the color 0 in their grids. That was due to 2 reasons: the grid did not display objects, but rather patterns; or another color (colors) act as background. In similar fashion, the distribution of object counts per task visualises the outliers very clearly. 75% of the tasks have around 20 or less objects in a training pair on average, but outliers have up to 650 objects, signaling that the task would be pattern-related rather than centered around object definition. Of course smaller grids tend to have less objects, therefore this does not define pattern tasks entirely.</p>
 </div>
 </div>
 </div>
@@ -7740,7 +7734,7 @@ a.anchor-link {
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [4]:</div>
+<div class="jp-InputPrompt jp-InputArea-prompt">In [ ]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="n">input_shapes</span> <span class="o">=</span> <span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">item</span><span class="p">[</span><span class="s1">'input'</span><span class="p">])</span><span class="o">.</span><span class="n">shape</span> <span class="k">for</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">train_data</span><span class="o">.</span><span class="n">values</span><span class="p">()</span> <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">value</span><span class="p">]</span>
@@ -7765,7 +7759,6 @@ a.anchor-link {
 <span class="n">ax1</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s1">'N'</span><span class="p">)</span>
 <span class="n">ax1</span><span class="o">.</span><span class="n">invert_yaxis</span><span class="p">()</span>
 
-<span class="c1"># Heatmap for output matrices</span>
 <span class="n">max_output_rows</span> <span class="o">=</span> <span class="nb">max</span><span class="p">([</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">shape</span> <span class="ow">in</span> <span class="n">output_shapes</span><span class="p">])</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">output_shapes</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="k">else</span> <span class="mi">0</span>
 <span class="n">max_output_cols</span> <span class="o">=</span> <span class="nb">max</span><span class="p">([</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="k">for</span> <span class="n">shape</span> <span class="ow">in</span> <span class="n">output_shapes</span><span class="p">])</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">output_shapes</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="k">else</span> <span class="mi">0</span>
 
@@ -7918,7 +7911,7 @@ a.anchor-link {
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [7]:</div>
+<div class="jp-InputPrompt jp-InputArea-prompt">In [ ]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="k">def</span> <span class="nf">extract_pixel_changes</span><span class="p">(</span><span class="n">input_grid</span><span class="p">,</span> <span class="n">output_grid</span><span class="p">):</span>
@@ -8202,7 +8195,7 @@ a.anchor-link {
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [8]:</div>
+<div class="jp-InputPrompt jp-InputArea-prompt">In [ ]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="n">objects_with_different_background_ids</span> <span class="o">=</span> <span class="p">[</span>
@@ -8234,9 +8227,9 @@ a.anchor-link {
 <span class="n">objects_with_different_background_id</span> <span class="o">=</span> <span class="n">objects_with_different_background_ids</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
 <span class="n">plot_task</span><span class="p">(</span><span class="n">objects_with_different_background_id</span><span class="p">,</span> <span class="n">train_data</span><span class="p">[</span><span class="n">objects_with_different_background_id</span><span class="p">],</span> <span class="n">test_data</span><span class="p">[</span><span class="n">objects_with_different_background_id</span><span class="p">],</span> <span class="n">title</span><span class="o">=</span><span class="sa">f</span><span class="s2">"Objects with different background example - </span><span class="si">{</span><span class="n">objects_with_different_background_id</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
 <span class="n">objects_misc_id</span> <span class="o">=</span> <span class="n">objects_misc_ids</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
-<span class="n">plot_task</span><span class="p">(</span><span class="n">objects_misc_id</span><span class="p">,</span> <span class="n">train_data</span><span class="p">[</span><span class="n">objects_misc_id</span><span class="p">],</span> <span class="n">test_data</span><span class="p">[</span><span class="n">objects_misc_id</span><span class="p">],</span> <span class="n">title</span><span class="o">=</span><span class="sa">f</span><span class="s2">"Objects misc example - </span><span class="si">{</span><span class="n">objects_misc_id</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="n">plot_task</span><span class="p">(</span><span class="n">objects_misc_id</span><span class="p">,</span> <span class="n">train_data</span><span class="p">[</span><span class="n">objects_misc_id</span><span class="p">],</span> <span class="n">test_data</span><span class="p">[</span><span class="n">objects_misc_id</span><span class="p">],</span> <span class="n">title</span><span class="o">=</span><span class="sa">f</span><span class="s2">"Objects misc example 1 - </span><span class="si">{</span><span class="n">objects_misc_id</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
 <span class="n">objects_misc_id</span> <span class="o">=</span> <span class="n">objects_misc_ids</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
-<span class="n">plot_task</span><span class="p">(</span><span class="n">objects_misc_id</span><span class="p">,</span> <span class="n">train_data</span><span class="p">[</span><span class="n">objects_misc_id</span><span class="p">],</span> <span class="n">test_data</span><span class="p">[</span><span class="n">objects_misc_id</span><span class="p">],</span> <span class="n">title</span><span class="o">=</span><span class="sa">f</span><span class="s2">"Objects misc example - </span><span class="si">{</span><span class="n">objects_misc_id</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="n">plot_task</span><span class="p">(</span><span class="n">objects_misc_id</span><span class="p">,</span> <span class="n">train_data</span><span class="p">[</span><span class="n">objects_misc_id</span><span class="p">],</span> <span class="n">test_data</span><span class="p">[</span><span class="n">objects_misc_id</span><span class="p">],</span> <span class="n">title</span><span class="o">=</span><span class="sa">f</span><span class="s2">"Objects misc example 2 - </span><span class="si">{</span><span class="n">objects_misc_id</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
