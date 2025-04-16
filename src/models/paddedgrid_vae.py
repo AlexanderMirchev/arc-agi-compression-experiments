@@ -8,6 +8,7 @@ import numpy as np
 import glob
 import os
 import json
+from models.grid_augmentations import GridAugmenter
 
 class VAE(nn.Module):
     def __init__(self, in_channels=11, latent_dim=16, base_filters=32, num_classes=11, min_spatial_size=4):
@@ -198,10 +199,27 @@ def train(model, train_loader, optimizer, device, beta=1.0, epoch=0):
     return avg_loss
 
 class GridDataset(Dataset):
-    def __init__(self, grids, num_classes=11, target_size=(30, 30)):
+    def __init__(self, grids, num_classes=11, target_size=(30, 30), augment=True):
         self.grids = grids
         self.num_classes = num_classes
         self.target_height, self.target_width = target_size
+        initial_size = len(self.grids)
+        if augment:
+            self._apply_augmentations()
+
+        print(f"Dataset size after augmentation: {initial_size} -> {len(self.grids)}")
+
+    def _apply_augmentations(self):
+        """Apply augmentations to all grids in the dataset"""
+        augmenter = GridAugmenter(num_colors=self.num_classes - 1) # one class is for the backgrounds
+        
+        total_augmentations = []
+        # for grid in self.grids:
+        for grid in self.grids:
+            augmented_grids = augmenter.augment_grid(grid)
+            total_augmentations.extend(augmented_grids)
+                
+        self.grids = total_augmentations
 
     def __len__(self):
         return len(self.grids)
@@ -225,23 +243,7 @@ class GridDataset(Dataset):
         one_hot = F.one_hot(padded_grid, num_classes=self.num_classes).permute(2, 0, 1).float()
 
         return one_hot
-
-def custom_collate(batch):
-    # Find the maximum dimensions in the batch
-    max_h = max([item.shape[1] for item in batch])
-    max_w = max([item.shape[2] for item in batch])
-    num_classes = batch[0].shape[0]
     
-    # Create padded batch
-    padded_batch = []
-    for item in batch:
-        h, w = item.shape[1], item.shape[2]
-        padded = torch.zeros(num_classes, max_h, max_w)
-        padded[:, :h, :w] = item
-        padded_batch.append(padded)
-    
-    return torch.stack(padded_batch)
-
 # Visualization function
 def visualize_grid(grid, title="Grid"):
     plt.figure(figsize=(6, 6))
@@ -267,8 +269,7 @@ def main():
     train_loader = DataLoader(
         dataset, 
         batch_size=batch_size, 
-        shuffle=True, 
-        collate_fn=custom_collate
+        shuffle=True,
     )
 
     channels = 11 # 10 channels for the colors, 1 for padding
