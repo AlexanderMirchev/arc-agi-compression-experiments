@@ -19,7 +19,7 @@ _grid_color = "#555555"
 
 _norm = colors.Normalize(vmin=0, vmax=9)
 
-def draw_grid(ax, matrix, title):
+def draw_grid(ax, matrix, title=""):
     """Draw a single grid on the given axis with grid lines."""
     ax.imshow(matrix, cmap=_cmap, norm=_norm)
     ax.set_title(title)

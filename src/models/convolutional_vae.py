@@ -20,10 +20,13 @@ class ConvolutionalVAE(nn.Module):
         # Encoder
         self.encoder = nn.Sequential(
             nn.Conv2d(in_channels, num_filters, kernel_size=4, stride=2),  # 10x30x30 -> 128x14x14
+            nn.BatchNorm2d(num_filters),
             nn.LeakyReLU(),
             nn.Conv2d(num_filters, num_filters, kernel_size=4, stride=2),  # 128x14x14 -> 128x7x7
+            nn.BatchNorm2d(num_filters),
             nn.LeakyReLU(),
             nn.Conv2d(num_filters, num_filters, kernel_size=4, stride=2),  # 128x7x7 -> 128x2x2
+            nn.BatchNorm2d(num_filters),
             nn.LeakyReLU(),
         )
 
@@ -36,8 +39,10 @@ class ConvolutionalVAE(nn.Module):
         self.fc_decode = nn.Linear(latent_dim, self.flatten_dim)
         self.decoder = nn.Sequential(
             nn.ConvTranspose2d(num_filters, num_filters, kernel_size=4, stride=2),
+            nn.BatchNorm2d(num_filters),
             nn.LeakyReLU(),
             nn.ConvTranspose2d(num_filters, num_filters, kernel_size=4, stride=2),
+            nn.BatchNorm2d(num_filters),
             nn.LeakyReLU(),
             nn.ConvTranspose2d(num_filters, in_channels, kernel_size=4, stride=2),
             nn.Sigmoid(),
@@ -167,19 +172,18 @@ def main():
             train_losses.append(train_loss)
             val_losses.append(val_loss)
 
-            # Save checkpoint
-            if epoch % 10 == 0:
+            if val_loss < best_val_loss:
+                best_val_loss = val_loss
+                epochs_without_improvement = 0
+
                 torch.save({
                     'epoch': epoch,
                     'model_state_dict': model.state_dict(),
                     'optimizer_state_dict': optimizer.state_dict(),
                     'train_loss': train_loss,
                     'val_loss': val_loss,
-                }, 'checkpoints/vae_checkpoint_epoch.pt')
+                }, 'checkpoints/conv_vae_batchnorm_epoch.pt')
 
-            if val_loss < best_val_loss:
-                best_val_loss = val_loss
-                epochs_without_improvement = 0
             else:
                 epochs_without_improvement += 1
 
