@@ -20,7 +20,7 @@ class GridDataset(Dataset):
 
     def _apply_augmentations(self):
         """Apply augmentations to all grids in the dataset"""
-        augmenter = GridAugmenter(num_colors=self.num_classes - 1, color_aug_prob=1, mirror_aug_prob=1, rotation_aug_prob=1) # one class is for the backgrounds
+        augmenter = GridAugmenter(color_aug_prob=1, mirror_aug_prob=1, rotation_aug_prob=1) # one class is for the backgrounds
         
         total_augmentations = []
         # for grid in self.grids:

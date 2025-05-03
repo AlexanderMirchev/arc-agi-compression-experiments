@@ -1,136 +1,92 @@
 import numpy as np
 import random
 
-class GridAugmenter:
-    def __init__(self, num_colors, color_aug_prob=1, color_aug_count=1, rotation_aug_prob=0.6, mirror_aug_prob=0.5):
-        self.num_colors = num_colors
-        self.color_aug_prob = color_aug_prob
-        self.rotation_aug_prob = rotation_aug_prob
-        self.mirror_aug_prob = mirror_aug_prob
-        self.color_aug_count = color_aug_count 
-        
-    def augment_grid(self, grid):
-        augmented_grids = [np.array(grid.copy())] 
-        color_augs = []
+def augment_grid_pairs(
+        grid_pairs, 
+        target_count,      
+        color_aug_prob=1.0, 
+        rotation_aug_prob=0.6, 
+        mirror_aug_prob=0.5,
+        noise_aug_prob=1.0,
+        num_colors=10,
+): 
+    if(len(grid_pairs) >= target_count):
+        return grid_pairs
     
-        # Color augmentations
-        for _ in range(self.color_aug_count):
-            if random.random() < self.color_aug_prob:
-                color_augs = self._color_augmentation(grid)
-                augmented_grids.extend(color_augs)
-        
-        # Color augmentations
-        if random.random() < self.color_aug_prob:
-            color_augs = self._color_augmentation(grid)
-            augmented_grids.extend(color_augs)
-
-        # Rotation augmentations
-        if random.random() < self.rotation_aug_prob:
-            rotated_grids = self._rotation_augmentation(grid)
-            augmented_grids.extend(rotated_grids)
-            
-            # Also apply rotations to color augmented grids
-            for color_grid in color_augs:
-                rotated_color_grids = self._rotation_augmentation(color_grid)
-                augmented_grids.extend(rotated_color_grids)
-        
-        # Mirror augmentations
-        if random.random() < self.mirror_aug_prob:
-            mirror_grid = self._mirror_augmentation(grid)
-            augmented_grids.append(mirror_grid)
-            
-            # Also mirror rotated and color augmented grids
-            for color_grid in color_augs:
-                mirror_color = self._mirror_augmentation(color_grid)
-                augmented_grids.append(mirror_color)
-                            
-        return augmented_grids
+    expanded = grid_pairs.copy()
     
-    def _color_augmentation(self, grid):
-        result = []
-        original_colors = np.unique(grid)
-        
-        # Skip if there's only one color (nothing to remap)
-        if len(original_colors) <= 1:
-            return result
-            
-        # Create 2 color remappings
-        for _ in range(2):
-            new_colors = np.random.permutation(self.num_colors)[:len(original_colors)]
-            color_map = {old: new for old, new in zip(original_colors, new_colors)}
-            
-            new_grid = np.zeros_like(grid)
-            for old_color, new_color in color_map.items():
-                new_grid[grid == old_color] = new_color
-                
-            result.append(new_grid)
-            
-        return result
+    while len(expanded) < target_count:
+        pair = random.choice(grid_pairs)
+        augmented = _augment_pair(pair, color_aug_prob=color_aug_prob,
+                                rotation_aug_prob=rotation_aug_prob,
+                                mirror_aug_prob=mirror_aug_prob,
+                                noise_aug_prob=noise_aug_prob,
+                                num_colors=num_colors)
+        expanded.extend(augmented)
     
-    def _rotation_augmentation(self, grid):
-        rotations = []
+    return expanded
 
-        rot90 = np.rot90(grid)
-        rotations.append(rot90)
-        
-        rot180 = np.rot90(rot90)
-        rotations.append(rot180)
-        
-        rot270 = np.rot90(rot180)
-        rotations.append(rot270)
-        
-        return np.array([random.choice(rotations)])
-    
-    def _mirror_augmentation(self, grid):
-        return np.fliplr(grid).copy()
-    
-def augment_grids(grids, num_colors, 
-                  color_aug_prob=1.0, rotation_aug_prob=0.6, mirror_aug_prob=0.5):
-    
-    def color_augmentation(grid):
-        original_colors = np.unique(grid)
-        if len(original_colors) <= 1:
-            return grid.copy()
-        
-        new_colors = np.random.permutation(num_colors)[:len(original_colors)]
-        color_map = {old: new for old, new in zip(original_colors, new_colors)}
-        new_grid = np.zeros_like(grid)
-        for old_color, new_color in color_map.items():
-            new_grid[grid == old_color] = new_color
-        return new_grid
+def _augment_pair(
+        pair, 
+        color_aug_prob, 
+        rotation_aug_prob, 
+        mirror_aug_prob,
+        noise_aug_prob,
+        num_colors=10,
+):
+    in_grid, out_grid = pair
+    aug_pairs = [(in_grid.copy(), out_grid.copy())]
 
-    def rotation_augmentation(grid):
-        k = random.choice([1, 2, 3])
-        return np.rot90(grid, k=k)
+    if random.random() < color_aug_prob:
+        aug_pairs.append(_apply_color_augmentation(in_grid, out_grid, num_colors))
 
-    def mirror_augmentation(grid):
-        return np.fliplr(grid).copy()
+    if random.random() < rotation_aug_prob:
+        rotated = _apply_rotation_augmentation(in_grid, out_grid)
+        aug_pairs.append(rotated)
 
-    augmented = []
+    if random.random() < mirror_aug_prob:
+        mirrored = _apply_mirror_augmentation(in_grid, out_grid)
+        aug_pairs.append(mirrored)
 
-    for grid in grids:
-        aug_grid = grid.copy()
+    if random.random() < noise_aug_prob:
+        noisy = _apply_noise_augmentation_pair(in_grid, out_grid, num_colors=num_colors)
+        aug_pairs.append(noisy)
 
-        if random.random() < color_aug_prob:
-            aug_grid = color_augmentation(aug_grid)
-            augmented.append(aug_grid)
+    return aug_pairs
 
-        if random.random() < color_aug_prob:
-            aug_grid = color_augmentation(aug_grid)
-            augmented.append(aug_grid)
+def _apply_color_augmentation(input_grid, output_grid, num_colors=10):
+    all_colors = np.unique(np.concatenate((input_grid.flatten(), output_grid.flatten())))
+    if len(all_colors) <= 1:
+        return input_grid.copy(), output_grid.copy()
 
-        if random.random() < rotation_aug_prob:
-            aug_grid = rotation_augmentation(aug_grid)
-            augmented.append(aug_grid)
+    new_colors = np.random.permutation(num_colors)[:len(all_colors)]
+    color_map = {old: new for old, new in zip(all_colors, new_colors)}
 
-        if random.random() < rotation_aug_prob:
-            aug_grid = rotation_augmentation(aug_grid)
-            augmented.append(aug_grid)
+    new_input = np.zeros_like(input_grid)
+    new_output = np.zeros_like(output_grid)
 
-        if random.random() < mirror_aug_prob:
-            aug_grid = mirror_augmentation(aug_grid)
-            augmented.append(aug_grid)
+    for old_color, new_color in color_map.items():
+        new_input[input_grid == old_color] = new_color
+        new_output[output_grid == old_color] = new_color
 
-        augmented.append(aug_grid)
+    return new_input, new_output
 
-    return augmented
+def _apply_rotation_augmentation(input_grid, output_grid):
+    k = random.choice([1, 2, 3])
+    return np.rot90(input_grid, k=k), np.rot90(output_grid, k=k)
+
+def _apply_mirror_augmentation(input_grid, output_grid):
+    return np.fliplr(input_grid).copy(), np.fliplr(output_grid).copy()
+
+def _apply_noise_augmentation_pair(input_grid, output_grid, noise_prob=0.05, num_colors=10):
+    noisy_input = input_grid.copy()
+    input_mask = np.random.rand(*input_grid.shape) < noise_prob
+    input_random_values = np.random.randint(0, num_colors, size=input_grid.shape)
+    noisy_input[input_mask] = input_random_values[input_mask]
+
+    noisy_output = output_grid.copy()
+    output_mask = np.random.rand(*output_grid.shape) < noise_prob
+    output_random_values = np.random.randint(0, num_colors, size=output_grid.shape)
+    noisy_output[output_mask] = output_random_values[output_mask]
+
+    return noisy_input, noisy_output
