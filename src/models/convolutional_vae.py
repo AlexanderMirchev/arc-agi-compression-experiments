@@ -89,9 +89,8 @@ def preprocess_grid(grid):
     return one_hot
 
 def postprocess_grid(grid, grid_original):
-    grid = torch.argmax(F.softmax(grid, dim=1), dim=1)
+    grid = torch.argmax(F.softmax(grid, dim=1), dim=1).squeeze(0).numpy()
     return reverse_scaling(grid_original, grid)
-
 
 def main():
     # Set random seed for reproducibility
@@ -106,18 +105,17 @@ def main():
     training_grid_pairs = [pair for task in training_data.values() for pairs in task.values() for pair in pairs]
     validation_grid_pairs = [pair for task in validation_data.values() for pairs in task.values() for pair in pairs]
 
-    
     model = ConvolutionalVAE(
         in_channels=10, 
         num_filters=128, 
         latent_dim=128,
+        feature_dim=[2, 2]
     ).to(device)
     
     print(f"Model architecture: {model}")
 
     training_grid_pairs = augment_grid_pairs(training_grid_pairs, target_count=15000)
     print(f"Loaded {len(training_grid_pairs)} (after augmentation) training grid pairs and {len(validation_grid_pairs)} validation grid pairs.")
-
 
     pipeline = Pipeline(
         model=model,

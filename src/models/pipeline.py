@@ -36,9 +36,6 @@ class Pipeline:
     def decode(self, z):        
         x = self.model.decode(z)
         
-        if self.decompress_fn:
-            z = self.decompress_fn(z)
-
         return x
     
     def forward(self, x):
@@ -46,6 +43,23 @@ class Pipeline:
     
     def reconstruct(self, x):
         return self.model.reconstruct(x)
+    
+    def model_eval(self):
+        self.model.eval()
+    
+    def preprocess_and_compress(self, x):
+        x = self.preprocess_fn(x)
+        if self.compress_fn:
+            x = self.compress_fn(x)
+        
+        return x
+
+    def decompress_and_postprocess(self, x, expected_x):
+        if self.decompress_fn:
+            x = self.decompress_fn(x)
+
+        return self.postprocess_fn(x, expected_x)
+    
 
     
 
