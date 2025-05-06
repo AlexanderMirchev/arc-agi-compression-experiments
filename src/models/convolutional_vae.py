@@ -11,7 +11,7 @@ from models.abstract_vae import AbstractVAE
 from models.pipeline import Pipeline
 
 from utils.load_data import get_grids
-from utils.train_vae import train, validate
+from utils.train_vae import vae_loss, train, validate
 
 class ConvolutionalVAE(AbstractVAE):
     def __init__(self, in_channels=10, num_filters=128, feature_dim=[2, 2], latent_dim=128):
@@ -138,10 +138,21 @@ def main():
     val_losses = []
     for epoch in range(1, max_epochs + 1):
         try:
-            beta = 0.1
+            beta = 0
 
-            train_loss = train(model, train_loader, optimizer, device, beta=beta, epoch=epoch)
-            val_loss = validate(model, val_loader, device, beta=beta, epoch=epoch)
+            train_loss = train(model, 
+                               train_loader, 
+                               loss_fn=vae_loss,
+                               optimizer=optimizer, 
+                               device=device, 
+                               beta=beta, 
+                               epoch=epoch)
+            val_loss = validate(model, 
+                                val_loader, 
+                                loss_fn=vae_loss,
+                                device=device, 
+                                beta=beta, 
+                                epoch=epoch)
             
             train_losses.append(train_loss)
             val_losses.append(val_loss)

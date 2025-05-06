@@ -30,7 +30,7 @@ def get_grids(filepath, split=True):
     json_files = glob.glob(os.path.join(filepath, "*.json"))
 
     task_count = len(json_files)
-    split_count = [0.75*task_count, 0.25*task_count] if split else [task_count, 0]
+    split_count = [300, 100] if split else [task_count, 0] # hardcoded
     train_dataset, val_dataset = random_split(json_files, split_count)
 
     train_data = _extract_pairs_by_puzzle_id(train_dataset)

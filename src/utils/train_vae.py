@@ -10,7 +10,14 @@ def vae_loss(recon_logits, x, mu, logvar, beta=1.0):
 
     return recon_loss + beta * kl_loss, recon_loss, kl_loss
 
-def train(model, train_loader, optimizer, device, beta=1.0, epoch=0):
+def vaev2_loss(recon_logits, x, mu, logvar, beta=1.0):    
+    recon_loss = F.binary_cross_entropy_with_logits(recon_logits, x, reduction='mean')
+
+    kl_loss = -0.5 * torch.mean(1 + logvar - mu.pow(2) - logvar.exp())
+    
+    return recon_loss + beta * kl_loss, recon_loss, kl_loss
+
+def train(model, train_loader, loss_fn, optimizer, device, beta=1.0, epoch=0):
     model.train()
     train_loss = 0
     recon_loss = 0
@@ -23,10 +30,10 @@ def train(model, train_loader, optimizer, device, beta=1.0, epoch=0):
         
         try:
             recon_batch, mu, logvar = model(data)
-            loss, rl, kl = vae_loss(recon_batch, data, mu, logvar, beta)
+            loss, rl, kl = loss_fn(recon_batch, data, mu, logvar, beta)
             
-            # print(loss, rl, kl)
             loss.backward()
+            torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
             train_loss += loss.item()
             recon_loss += rl.item()
             kl_loss += kl.item()
@@ -44,7 +51,7 @@ def train(model, train_loader, optimizer, device, beta=1.0, epoch=0):
     print(f'Epoch: {epoch}, Average training loss: {avg_loss:.4f} (RL: {avg_recon_loss}, KL: {avg_kl_loss}), Batches processed: {num_batches}')
     return avg_loss
 
-def validate(model, val_loader, device, beta=1.0, epoch=0):
+def validate(model, val_loader, loss_fn, device, beta=1.0, epoch=0):
     model.eval()
     val_loss = 0
     num_batches = 0
@@ -55,7 +62,7 @@ def validate(model, val_loader, device, beta=1.0, epoch=0):
             
             try:
                 recon_batch, mu, logvar = model(data)
-                loss, _, _ = vae_loss(recon_batch, data, mu, logvar, beta)
+                loss, _, _ = loss_fn(recon_batch, data, mu, logvar, beta)
                 val_loss += loss.item()
             
                 num_batches += 1
