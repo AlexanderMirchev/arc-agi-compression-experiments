@@ -27,7 +27,6 @@ def padding(X, height=30, width=30, direction='norm'):
 
     return X_pad
 
-# Scaling of the ARC matrices using the Kronecker Product, retaining all the information
 def scaling(X, height=30, width=30, direction='norm'):
     h = height/X.shape[0]
     w = width/X.shape[1]
@@ -38,22 +37,31 @@ def scaling(X, height=30, width=30, direction='norm'):
     if direction == 'norm':
         return padding(X_scaled, height, width).astype(int)
 
-    # Retain information for reverse scaling
     else:
         return d, X_scaled.shape
 
-# Reverse scaling of the ARC matrices for final computations
 def reverse_scaling(X_orig, X_pred):
-    d, X_shape = scaling(X_orig, 30, 30, direction='rev') # get scaling information
-    X_pad_rev = padding(X_pred, X_shape[0], X_shape[1], direction='rev') # reverse padding
+    d, X_shape = scaling(X_orig, 30, 30, direction='rev')  # d and padded shape
+
+    # Resize or pad prediction to match padded scaled shape
+    X_pad_rev = padding(X_pred, X_shape[0], X_shape[1], direction='rev')
 
     mm = X_shape[0] // d
     nn = X_shape[1] // d
-    X_sca_rev = X_pad_rev[:mm*d, :nn*d].reshape(mm, d, nn, d)
 
-    X_rev = np.zeros((mm, nn)).astype(int)
+    X_rev = np.zeros((mm, nn), dtype=int)
+
     for i in range(mm):
         for j in range(nn):
-            X_rev[i,j] = mode(X_sca_rev[i,:,j,:], axis=None, keepdims=False)[0]
+            block = X_pad_rev[i*d:(i+1)*d, j*d:(j+1)*d]
+
+            # Safeguard: if block size isn't d x d (e.g., on edge), skip or handle
+            if block.size == 0:
+                continue
+
+            # Use rounded mode (or fallback to rounded mean)
+            block_rounded = np.rint(block).astype(int).flatten()
+            m = mode(block_rounded, keepdims=False)
+            X_rev[i, j] = m.mode if m.count > 0 else int(np.round(np.mean(block)))
 
     return X_rev

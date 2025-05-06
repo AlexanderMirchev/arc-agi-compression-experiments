@@ -3,11 +3,9 @@ import torch.nn as nn
 from abc import ABC, abstractmethod
 
 class AbstractVAE(nn.Module, ABC):
-    def __init__(self, in_channels, latent_dim):
+    def __init__(self):
         super(AbstractVAE, self).__init__()
-        self.in_channels = in_channels
-        self.latent_dim = latent_dim
-
+        
     @abstractmethod
     def encode(self, x):
         """Encode input into latent mean and log variance"""

@@ -2,7 +2,6 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
-import matplotlib.pyplot as plt
 import numpy as np
 
 from data.augmentations import augment_grid_pairs
@@ -11,7 +10,8 @@ from models.abstract_vae import AbstractVAE
 from models.pipeline import Pipeline
 
 from utils.load_data import get_grids
-from utils.train_vae import vae_loss, train, validate
+from utils.train_vae import vae_loss_mse, train, validate
+from utils.view import plot_losses
 
 class ConvolutionalVAE(AbstractVAE):
     def __init__(self, in_channels=10, num_filters=128, feature_dim=[2, 2], latent_dim=128):
@@ -65,20 +65,6 @@ class ConvolutionalVAE(AbstractVAE):
         x = torch.clamp(x, 0.0, 1.0)
         return x
 
-def plot_losses(train_losses, val_losses):
-    epochs = range(1, len(train_losses) + 1)
-    
-    plt.figure(figsize=(10, 6))
-    plt.plot(epochs, train_losses, 'bo-', label='Training Loss')
-    plt.plot(epochs, val_losses, 'ro-', label='Validation Loss')
-    plt.title('Training and Validation Loss Over Epochs')
-    plt.xlabel('Epoch')
-    plt.ylabel('Loss')
-    plt.legend()
-    plt.grid(True)
-    plt.tight_layout()
-    plt.show()
-
 def preprocess_grid(grid):
     grid = scaling(grid, height=30, width=30, direction='norm')
 
@@ -93,15 +79,10 @@ def postprocess_grid(grid, grid_original):
     return reverse_scaling(grid_original, grid)
 
 def main():
-    # Set random seed for reproducibility
     torch.manual_seed(42)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    # print(f"Using device: {device}")
-    
-    # Load the data
     training_data, validation_data = get_grids(filepath="data/training")
 
-    # print([pair for task in training_data.values() for pairs in task.values() for pair in pairs][0])
     training_grid_pairs = [pair for task in training_data.values() for pairs in task.values() for pair in pairs]
     validation_grid_pairs = [pair for task in validation_data.values() for pairs in task.values() for pair in pairs]
 
@@ -142,14 +123,14 @@ def main():
 
             train_loss = train(model, 
                                train_loader, 
-                               loss_fn=vae_loss,
+                               loss_fn=vae_loss_mse,
                                optimizer=optimizer, 
                                device=device, 
                                beta=beta, 
                                epoch=epoch)
             val_loss = validate(model, 
                                 val_loader, 
-                                loss_fn=vae_loss,
+                                loss_fn=vae_loss_mse,
                                 device=device, 
                                 beta=beta, 
                                 epoch=epoch)

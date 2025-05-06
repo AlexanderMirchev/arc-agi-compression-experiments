@@ -1,7 +1,8 @@
-import torch
 import torch.nn as nn
 
-class FullyConnectedVAE(nn.Module):
+from models.abstract_vae import AbstractVAE
+
+class FullyConnectedVAE(AbstractVAE):
     def __init__(self, input_dim, hidden_dim, latent_dim):
         super().__init__()
         # Encoder
@@ -29,13 +30,3 @@ class FullyConnectedVAE(nn.Module):
         
     def decode(self, z):
         return self.decoder(z)
-    
-    def forward(self, x):
-        mu, logvar = self.encode(x)
-        z = self.reparameterize(mu, logvar)
-        return self.decode(z), mu, logvar
-    
-    def reparameterize(self, mu, logvar):
-        std = torch.exp(0.5 * logvar)
-        eps = torch.randn_like(std)
-        return mu + eps * std
