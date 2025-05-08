@@ -36,6 +36,7 @@ def train(model, train_loader, loss_fn, optimizer, device, beta=1.0, epoch=0):
     
     for batch_idx, data in enumerate(train_loader):
         data = data[0].to(device) if isinstance(data, list) else data.to(device)
+        print(data)
         optimizer.zero_grad()
         
         try:
