@@ -11,12 +11,11 @@ from utils.load_data import get_grids
 from utils.train_vqvae import train, validate
 from utils.view import plot_losses
 
-class ConvolutionalVQVAE(AbstractVQVAE):
-    def __init__(self, in_channels=10, starting_filters=64, feature_dim=[8, 8], 
+class ConvolutionalVQVAE(AbstractVQVAE):    
+    def __init__(self, in_channels=10, starting_filters=64,
                  num_embeddings=512, embedding_dim=64, commitment_cost=0.25):
         super(ConvolutionalVQVAE, self).__init__()
         
-        self.feature_dim = feature_dim
         self.starting_filters = starting_filters
         self.embedding_dim = embedding_dim
         self.commitment_cost = commitment_cost
@@ -29,7 +28,7 @@ class ConvolutionalVQVAE(AbstractVQVAE):
             nn.Conv2d(starting_filters, starting_filters*2, kernel_size=3, stride=2, padding=1),  # -> 15->8
             nn.BatchNorm2d(starting_filters*2),
             nn.LeakyReLU(inplace=True),
-            nn.Conv2d(starting_filters*2, embedding_dim, kernel_size=3, stride=1, padding=1),  # -> 8x8
+            nn.Conv2d(starting_filters*2, embedding_dim, kernel_size=3, stride=1, padding=0),
             nn.BatchNorm2d(embedding_dim),
             nn.LeakyReLU(inplace=True),
         )
@@ -37,16 +36,53 @@ class ConvolutionalVQVAE(AbstractVQVAE):
         # Vector Quantization
         self.codebook = VectorQuantizer(num_embeddings, embedding_dim, commitment_cost, decay=0.99)
         
-        # Decoder
         self.decoder = nn.Sequential(
-            nn.ConvTranspose2d(embedding_dim, starting_filters*2, kernel_size=3, stride=2, padding=1, output_padding=0),  # 8→16
+            # First transposed convolution: 6x6 -> 13x13
+            # (6-1)*2 - 2*0 + 3 = 13
+            nn.ConvTranspose2d(
+                in_channels=embedding_dim,
+                out_channels=starting_filters*2,
+                kernel_size=3,
+                stride=2,
+                padding=0
+            ),
             nn.BatchNorm2d(starting_filters*2),
             nn.LeakyReLU(inplace=True),
-            nn.ConvTranspose2d(starting_filters*2, starting_filters, kernel_size=3, stride=2, padding=1, output_padding=1),
+            
+            # Second transposed convolution: 13x13 -> 25x25
+            # (13-1)*2 - 2*0 + 1 = 25
+            nn.ConvTranspose2d(
+                in_channels=starting_filters*2,
+                out_channels=starting_filters,
+                kernel_size=1,
+                stride=2,
+                padding=0
+            ),
             nn.BatchNorm2d(starting_filters),
             nn.LeakyReLU(inplace=True),
-            nn.ConvTranspose2d(starting_filters, in_channels, kernel_size=3, padding=1),
-            nn.Sigmoid(),
+            
+            # Third transposed convolution: 25x25 -> 30x30
+            # Fixed size increase: 25+5 = 30
+            nn.ConvTranspose2d(
+                in_channels=starting_filters,
+                out_channels=starting_filters//2,
+                kernel_size=6,
+                stride=1,
+                padding=0,
+                output_padding=0
+            ),
+            nn.BatchNorm2d(starting_filters//2),
+            nn.LeakyReLU(inplace=True),
+            
+            # Final layer: Channel adjustment while maintaining size
+            nn.Conv2d(  # Using Conv2d, not ConvTranspose2d for final size preservation
+                in_channels=starting_filters//2,
+                out_channels=in_channels,
+                kernel_size=1,
+                stride=1,
+                padding=0
+            ),
+            nn.Sigmoid()  # Final activation for pixel values between 0 and 1
         )
     
     def encode(self, x):
@@ -60,7 +96,6 @@ class ConvolutionalVQVAE(AbstractVQVAE):
     def decode(self, z_q):
         x_recon = self.decoder(z_q)
         return torch.clamp(x_recon, 0.0, 1.0)
-
 
 class VectorQuantizer(nn.Module):
     def __init__(self, num_embeddings, embedding_dim, commitment_cost, decay=0.99, epsilon=1e-5):
@@ -189,9 +224,8 @@ def main():
     model = ConvolutionalVQVAE(
         in_channels=10, 
         starting_filters=64, 
-        num_embeddings=128,
+        num_embeddings=256,
         embedding_dim=64,
-        feature_dim=[8, 8],
         commitment_cost=0.1
     ).to(device)
     

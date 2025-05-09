@@ -51,7 +51,6 @@ class Pipeline:
         x = self.preprocess_fn(x)
         if self.compress_fn:
             x = self.compress_fn(x)
-        
         return x
 
     def decompress_and_postprocess(self, x, expected_x):
