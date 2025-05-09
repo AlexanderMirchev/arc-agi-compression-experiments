@@ -15,7 +15,7 @@ from utils.train_vae import vae_loss, train, validate
 
 class ConvolutionalVAEV2(AbstractVAE):
     def __init__(self, in_channels=10, starting_filters=64, feature_dim=[8, 8], latent_dim=128):
-        super(ConvolutionalVAEV2, self).__init__(in_channels, latent_dim)
+        super(ConvolutionalVAEV2, self).__init__()
 
         self.feature_dim = feature_dim
         self.starting_filters = starting_filters
@@ -109,7 +109,7 @@ def main():
     model = ConvolutionalVAEV2(
         in_channels=10, 
         starting_filters=64, 
-        latent_dim=64,
+        latent_dim=128,
         feature_dim=[8, 8]
     ).to(device)
     

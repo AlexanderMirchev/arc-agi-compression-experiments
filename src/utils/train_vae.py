@@ -34,14 +34,16 @@ def train(model, train_loader, loss_fn, optimizer, device, beta=1.0, epoch=0):
     kl_loss = 0
     num_batches = 0
     
-    for batch_idx, data in enumerate(train_loader):
-        data = data[0].to(device) if isinstance(data, list) else data.to(device)
-        print(data)
+    for batch_idx, (input, output) in enumerate(train_loader):
+        
+        in_out = torch.cat((input, output), dim=0)
+        in_out = in_out.to(device)
+
         optimizer.zero_grad()
         
         try:
-            recon_batch, mu, logvar = model(data)
-            loss, rl, kl = loss_fn(recon_batch, data, mu, logvar, beta)
+            recon_batch, mu, logvar = model(in_out)
+            loss, rl, kl = loss_fn(recon_batch, in_out, mu, logvar, beta)
             
             loss.backward()
             torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
@@ -53,7 +55,7 @@ def train(model, train_loader, loss_fn, optimizer, device, beta=1.0, epoch=0):
                 
         except Exception as e:
             print(f"Error processing batch {batch_idx}: {e}")
-            print(f"Input shape: {data.shape}")
+            print(f"Input shape: {in_out.shape}")
             continue
     
     avg_loss = train_loss / max(1, num_batches)
@@ -68,19 +70,20 @@ def validate(model, val_loader, loss_fn, device, beta=1.0, epoch=0):
     num_batches = 0
     
     with torch.no_grad():
-        for batch_idx, data in enumerate(val_loader):
-            data = data[0].to(device) if isinstance(data, (list, tuple)) else data.to(device)
+        for batch_idx, (input, output) in enumerate(val_loader):
+            in_out = torch.cat((input, output), dim=0)
+            in_out = in_out.to(device)
             
             try:
-                recon_batch, mu, logvar = model(data)
-                loss, _, _ = loss_fn(recon_batch, data, mu, logvar, beta)
+                recon_batch, mu, logvar = model(in_out)
+                loss, _, _ = loss_fn(recon_batch, in_out, mu, logvar, beta)
                 val_loss += loss.item()
             
                 num_batches += 1
                     
             except Exception as e:
                 print(f"Error processing batch {batch_idx}: {e}")
-                print(f"Input shape: {data.shape}")
+                print(f"Input shape: {in_out.shape}")
                 continue
     
     avg_loss = val_loss / max(1, num_batches)
