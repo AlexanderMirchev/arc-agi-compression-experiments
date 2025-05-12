@@ -21,7 +21,8 @@ def preprocess_grid(grid):
     return one_hot
 
 def postprocess_grid(grid, grid_original):
-    grid = torch.argmax(F.softmax(grid, dim=1), dim=1).squeeze(0).numpy()
+    _, grid = torch.max(grid, dim=0)
+    grid = grid.detach().cpu().numpy()
     return reverse_scaling(grid_original, grid)
 
 def get_compression_functions(saved_model_path):
@@ -45,10 +46,11 @@ def get_compression_functions(saved_model_path):
         z_q = z_q.squeeze(0).view(z_q.size(0), -1) # to linear
         return z_q
     
-    def decompress_fn(z_q):
-        z_q = z_q.to(device)
-        z_q = z_q.view(1, 64, 6, 6)
-        recon_batch = model.decode(z_q)
+    def decompress_fn(z_e):
+        z_q = z_e.to(device)
+        z_q = z_q.view(1, 64, 6, 6) 
+        z_q2, _, _ = model.quantize(z_q) # to actually map them to quantized vectors
+        recon_batch = model.decode(z_q2)
         return recon_batch
     return compress_fn, decompress_fn
 

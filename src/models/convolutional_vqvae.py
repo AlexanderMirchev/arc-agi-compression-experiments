@@ -82,7 +82,7 @@ class ConvolutionalVQVAE(AbstractVQVAE):
                 stride=1,
                 padding=0
             ),
-            nn.Sigmoid()  # Final activation for pixel values between 0 and 1
+            nn.Sigmoid() 
         )
     
     def encode(self, x):
@@ -205,7 +205,8 @@ def preprocess_grid(grid):
     return one_hot
 
 def postprocess_grid(grid, grid_original):
-    grid = torch.argmax(F.softmax(grid, dim=1), dim=1).squeeze(0).numpy()
+    _, grid = torch.max(grid, dim=0)
+    grid = grid.detach().cpu().numpy()
     return reverse_scaling(grid_original, grid)
 
 def main():

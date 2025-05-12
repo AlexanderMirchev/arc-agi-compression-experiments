@@ -75,7 +75,8 @@ def preprocess_grid(grid):
     return one_hot
 
 def postprocess_grid(grid, grid_original):
-    grid = torch.argmax(F.softmax(grid, dim=1), dim=1).squeeze(0).numpy()
+    _, grid = torch.max(grid, dim=0)
+    grid = grid.detach().cpu().numpy()
     return reverse_scaling(grid_original, grid)
 
 def main():
@@ -121,8 +122,7 @@ def main():
     val_losses = []
     for epoch in range(1, max_epochs + 1):
         try:
-            beta = 0.1
-
+            beta = 0.05
             train_loss = train(model, 
                                 train_loader, 
                                 loss_fn=vae_loss, 
