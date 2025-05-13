@@ -75,7 +75,8 @@ def preprocess_grid(grid):
     return one_hot
 
 def postprocess_grid(grid, grid_original):
-    grid = torch.argmax(F.softmax(grid, dim=1), dim=1).squeeze(0).numpy()
+    _, grid = torch.max(grid, dim=0)
+    grid = grid.detach().cpu().numpy()
     return reverse_scaling(grid_original, grid)
 
 def main():

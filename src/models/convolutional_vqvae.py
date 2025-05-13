@@ -35,7 +35,7 @@ class ConvolutionalVQVAE(AbstractVQVAE):
         
         # Vector Quantization
         self.codebook = VectorQuantizer(num_embeddings, embedding_dim, commitment_cost, decay=0.99)
-        
+            
         self.decoder = nn.Sequential(
             # First transposed convolution: 6x6 -> 13x13
             # (6-1)*2 - 2*0 + 3 = 13
