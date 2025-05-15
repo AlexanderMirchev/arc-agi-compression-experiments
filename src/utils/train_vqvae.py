@@ -18,7 +18,7 @@ def train(model: AbstractVQVAE, train_loader, optimizer, device, beta=1.0, epoch
         try:
             recon_batch, vq_commitment_loss, z_e, z_q = model(in_out)
             
-            reconstruction_loss = F.binary_cross_entropy(recon_batch, in_out, reduction='mean')
+            reconstruction_loss = F.binary_cross_entropy(recon_batch, in_out, reduction='sum') / in_out.size(0)
             
             loss = reconstruction_loss + beta * vq_commitment_loss
             
@@ -57,12 +57,9 @@ def validate(model: AbstractVQVAE, val_loader, device, beta=1.0, epoch=0):
         try:
             recon_batch, vq_commitment_loss, _, _ = model(in_out)
             
-            reconstruction_loss = F.binary_cross_entropy(recon_batch, in_out, reduction='mean')
+            reconstruction_loss = F.binary_cross_entropy(recon_batch, in_out, reduction='sum') / in_out.size(0)
             
             loss = reconstruction_loss + beta * vq_commitment_loss
-            
-            loss.backward()
-            torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
             
             val_loss += loss.item()
             

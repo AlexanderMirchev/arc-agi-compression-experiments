@@ -8,9 +8,9 @@ class FullyConnectedVAE(AbstractVAE):
         # Encoder
         self.encoder = nn.Sequential(
             nn.Linear(input_dim, hidden_dim),
-            nn.ReLU(),
+            nn.LeakyReLU(inplace=True),
             nn.Linear(hidden_dim, hidden_dim//2),
-            nn.ReLU()
+            nn.LeakyReLU(inplace=True),
         )
         self.fc_mu = nn.Linear(hidden_dim//2, latent_dim)
         self.fc_logvar = nn.Linear(hidden_dim//2, latent_dim)
@@ -18,9 +18,9 @@ class FullyConnectedVAE(AbstractVAE):
         # Decoder
         self.decoder = nn.Sequential(
             nn.Linear(latent_dim, hidden_dim//2),
-            nn.ReLU(),
+            nn.LeakyReLU(inplace=True),
             nn.Linear(hidden_dim//2, hidden_dim),
-            nn.ReLU(),
+            nn.LeakyReLU(inplace=True),
             nn.Linear(hidden_dim, input_dim)
         )
     

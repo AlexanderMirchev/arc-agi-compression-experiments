@@ -5,16 +5,13 @@ def vae_loss(recon_logits, x, mu, logvar, beta=1.0):
     recon_logits = torch.clamp(recon_logits, 0.0, 1.0)
     target = torch.clamp(x, 0.0, 1.0)
 
-    recon_loss = F.binary_cross_entropy(recon_logits, target, reduction='mean') 
+    recon_loss = F.binary_cross_entropy(recon_logits, target, reduction='sum') / x.size(0)
     kl_loss = -0.5 * torch.mean(1 + logvar - mu.pow(2) - logvar.exp())
 
     return recon_loss + beta * kl_loss, recon_loss, kl_loss
 
 def vae_loss_mse(recon_logits, x, mu, logvar, beta=1.0):
-    recon_logits = torch.clamp(recon_logits, 0.0, 1.0)
-    target = torch.clamp(x, 0.0, 1.0)
-    
-    recon_loss = F.mse_loss(recon_logits, target, reduction='mean')
+    recon_loss = F.mse_loss(recon_logits, x, reduction='sum') / x.size(0)
     
     kl_loss = -0.5 * torch.mean(1 + logvar - mu.pow(2) - logvar.exp())
 

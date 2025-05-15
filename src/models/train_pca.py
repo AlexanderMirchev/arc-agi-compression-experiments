@@ -216,8 +216,8 @@ def main():
     n_components = 20  # Number of PCA components
     compressor = PCACompressor(n_components=n_components)
     compressor.fit(training_grids)
-    compressed_train_data = torch.tensor(compressor.compress(training_grids), dtype=torch.float32)
-    compressed_val_data = torch.tensor(compressor.compress(validation_grids), dtype=torch.float32)
+    compressed_train_data = compressor.compress(training_grids)
+    compressed_val_data = compressor.compress(validation_grids)
     
     train_dataset = TensorDataset(compressed_train_data)
     val_dataset = TensorDataset(compressed_val_data)

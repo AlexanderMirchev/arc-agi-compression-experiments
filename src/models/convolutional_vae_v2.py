@@ -41,7 +41,7 @@ class ConvolutionalVAEV2(AbstractVAE):
         # Decoder
         self.fc_decode = nn.Linear(latent_dim, self.flatten_dim)
         self.decoder = nn.Sequential(
-            nn.ConvTranspose2d(starting_filters*4, starting_filters*2, kernel_size=3, stride=2, padding=1, output_padding=0),  # 8→16
+            nn.ConvTranspose2d(starting_filters*4, starting_filters*2, kernel_size=3, stride=2, padding=1, output_padding=0),
             nn.BatchNorm2d(starting_filters*2),
             nn.LeakyReLU(inplace=True),
             nn.ConvTranspose2d(starting_filters*2, starting_filters, kernel_size=3, stride=2, padding=1, output_padding=1),
@@ -111,7 +111,7 @@ def main():
     train_loader = pipeline.create_data_loader(training_grid_pairs, batch_size=batch_size, shuffle=True)
     val_loader = pipeline.create_data_loader(validation_grid_pairs, batch_size=batch_size, shuffle=False)
     
-    optimizer = optim.AdamW(model.parameters(), lr=1e-4, weight_decay=1e-4)
+    optimizer = optim.AdamW(model.parameters(), lr=1e-4, weight_decay=1e-3)
     
     max_epochs = 100
     patience = 5
@@ -122,7 +122,7 @@ def main():
     val_losses = []
     for epoch in range(1, max_epochs + 1):
         try:
-            beta = 0.05
+            beta = 5.0
             train_loss = train(model, 
                                 train_loader, 
                                 loss_fn=vae_loss, 

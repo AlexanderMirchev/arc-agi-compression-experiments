@@ -32,26 +32,35 @@ def get_compression_functions(saved_model_path):
         starting_filters=64, 
         num_embeddings=256,
         embedding_dim=64,
-        commitment_cost=0.1
+        commitment_cost=0.1,
     ).to(device)
 
     checkpoint = torch.load(saved_model_path, map_location=device)
     model.load_state_dict(checkpoint['model_state_dict'])
 
     def compress_fn(grid):
-        grid = grid.to(device)
-        grid = grid.unsqueeze(0)  # Add batch dimension
-        z_e = model.encode(grid)
-        z_q, _, _ = model.quantize(z_e)
-        z_q = z_q.squeeze(0).view(z_q.size(0), -1) # to linear
-        return z_q
-    
+        # print("c", model)
+        model.eval()
+
+        with torch.no_grad():
+            grid = grid.to(device)
+            grid = grid.unsqueeze(0)  # Add batch dimension
+            z_e = model.encode(grid)
+            z_q, _, _ = model.quantize(z_e)
+            z_q = z_q.view(z_q.size(0), -1) # to linear
+            return z_q
+        
     def decompress_fn(z_e):
-        z_q = z_e.to(device)
-        z_q = z_q.view(1, 64, 6, 6) 
-        z_q2, _, _ = model.quantize(z_q) # to actually map them to quantized vectors
-        recon_batch = model.decode(z_q2)
-        return recon_batch
+        # print("d", model)
+        model.eval()
+
+        with torch.no_grad():
+            # z_e = z_e.to(device)
+            z_q = z_e.view(1, 64, 6, 6) 
+            z_q, _, _ = model.quantize(z_q)
+            recon_batch = model.decode(z_q).squeeze(0)
+            return recon_batch
+        
     return compress_fn, decompress_fn
 
 def main():
@@ -73,10 +82,10 @@ def main():
     
     print(f"Model architecture: {model}")
 
-    training_grid_pairs = augment_grid_pairs(training_grid_pairs, target_count=5000)
+    training_grid_pairs = augment_grid_pairs(training_grid_pairs, target_count=15000)
     # print(f"Loaded {len(training_grid_pairs)} (after augmentation) training grid pairs and {len(validation_grid_pairs)} validation grid pairs.")
 
-    compress_fn, decompress_fn = get_compression_functions('checkpoints/conv_vqvae_batchnorm_6x6x64.pt')
+    compress_fn, decompress_fn = get_compression_functions('checkpoints/conv_vqvae_6x6x64_b001.pt')
 
     pipeline = Pipeline(
         model=model,
@@ -90,7 +99,7 @@ def main():
     train_loader = pipeline.create_data_loader(training_grid_pairs, batch_size=batch_size, shuffle=True)
     val_loader = pipeline.create_data_loader(validation_grid_pairs, batch_size=batch_size, shuffle=False)
     
-    optimizer = optim.AdamW(model.parameters(), lr=5e-5, weight_decay=1e-4)
+    optimizer = optim.AdamW(model.parameters(), lr=1e-4, weight_decay=1e-3)
     
     max_epochs = 100
     patience = 5
@@ -103,7 +112,7 @@ def main():
 
     for epoch in range(1, max_epochs + 1):
         try:
-            beta = 0.01
+            beta = 2.0
 
             train_loss = train(model, 
                                train_loader, 

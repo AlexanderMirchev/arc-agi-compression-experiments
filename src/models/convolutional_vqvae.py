@@ -35,7 +35,7 @@ class ConvolutionalVQVAE(AbstractVQVAE):
         
         # Vector Quantization
         self.codebook = VectorQuantizer(num_embeddings, embedding_dim, commitment_cost, decay=0.99)
-            
+
         self.decoder = nn.Sequential(
             # First transposed convolution: 6x6 -> 13x13
             # (6-1)*2 - 2*0 + 3 = 13
@@ -227,7 +227,7 @@ def main():
         starting_filters=64, 
         num_embeddings=256,
         embedding_dim=64,
-        commitment_cost=0.1
+        commitment_cost=0.25
     ).to(device)
     
     print(f"Model architecture: {model}")
@@ -245,7 +245,7 @@ def main():
     train_loader = pipeline.create_data_loader(training_grid_pairs, batch_size=batch_size, shuffle=True)
     val_loader = pipeline.create_data_loader(validation_grid_pairs, batch_size=batch_size, shuffle=False)
     
-    optimizer = optim.AdamW(model.parameters(), lr=1e-4, weight_decay=1e-4)
+    optimizer = optim.AdamW(model.parameters(), lr=1e-4, weight_decay=1e-3)
     
     max_epochs = 100
     patience = 5
@@ -256,7 +256,7 @@ def main():
     val_losses = []
     for epoch in range(1, max_epochs + 1):
         try:
-            beta = 0.01
+            beta = 0.5
 
             train_loss = train(model, 
                                 train_loader, 
