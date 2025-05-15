@@ -57,7 +57,7 @@ def main():
     
     training_data, validation_data = get_grids(filepath="data/training")
 
-    n_components = 20
+    n_components = 128
     filename = f"checkpoints/ppca_{n_components}.pkl"
 
     model = FullyConnectedVAE(
@@ -84,7 +84,7 @@ def main():
     train_loader = pipeline.create_data_loader(training_grid_pairs, batch_size=batch_size, shuffle=True)
     val_loader = pipeline.create_data_loader(validation_grid_pairs, batch_size=batch_size, shuffle=False)
     
-    optimizer = optim.AdamW(model.parameters(), lr=1e-4, weight_decay=1e-3)
+    optimizer = optim.AdamW(model.parameters(), lr=1e-3, weight_decay=1e-2)
     
     max_epochs = 100
     patience = 5
@@ -97,7 +97,7 @@ def main():
 
     for epoch in range(1, max_epochs + 1):
         try:
-            beta = 2.0
+            beta = 5.0
 
             train_loss = train(model, 
                                train_loader, 
