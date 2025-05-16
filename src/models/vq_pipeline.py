@@ -82,10 +82,10 @@ def main():
     
     print(f"Model architecture: {model}")
 
-    training_grid_pairs = augment_grid_pairs(training_grid_pairs, target_count=15000)
+    training_grid_pairs = augment_grid_pairs(training_grid_pairs, target_count=5000)
     # print(f"Loaded {len(training_grid_pairs)} (after augmentation) training grid pairs and {len(validation_grid_pairs)} validation grid pairs.")
 
-    compress_fn, decompress_fn = get_compression_functions('checkpoints/conv_vqvae_6x6x64_b001.pt')
+    compress_fn, decompress_fn = get_compression_functions('checkpoints/conv_vqvae_6x6x64_b2.pt')
 
     pipeline = Pipeline(
         model=model,
@@ -99,7 +99,7 @@ def main():
     train_loader = pipeline.create_data_loader(training_grid_pairs, batch_size=batch_size, shuffle=True)
     val_loader = pipeline.create_data_loader(validation_grid_pairs, batch_size=batch_size, shuffle=False)
     
-    optimizer = optim.AdamW(model.parameters(), lr=1e-4, weight_decay=1e-3)
+    optimizer = optim.AdamW(model.parameters(), lr=1e-4, weight_decay=1e-2)
     
     max_epochs = 100
     patience = 5
@@ -112,7 +112,7 @@ def main():
 
     for epoch in range(1, max_epochs + 1):
         try:
-            beta = 2.0
+            beta = 0.5
 
             train_loss = train(model, 
                                train_loader, 
