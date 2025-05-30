@@ -10,6 +10,12 @@ def vae_loss(recon_logits, x, mu, logvar, beta=1.0):
 
     return recon_loss + beta * kl_loss, recon_loss, kl_loss
 
+def vae_loss_ce(recon_logits, target, mu, logvar, beta=1.0):
+    recon_loss = F.cross_entropy(recon_logits, target, reduction='mean')
+    kl_loss = -0.5 * torch.mean(1 + logvar - mu.pow(2) - logvar.exp())
+
+    return recon_loss + beta * kl_loss, recon_loss, kl_loss
+
 def vae_loss_mse(recon_logits, x, mu, logvar, beta=1.0):
     recon_loss = F.mse_loss(recon_logits, x, reduction='sum') / x.size(0)
     

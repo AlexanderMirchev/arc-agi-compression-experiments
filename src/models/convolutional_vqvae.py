@@ -226,7 +226,7 @@ def main():
         in_channels=10, 
         starting_filters=64, 
         num_embeddings=256,
-        embedding_dim=64,
+        embedding_dim=128,
         commitment_cost=0.25
     ).to(device)
     
@@ -256,7 +256,7 @@ def main():
     val_losses = []
     for epoch in range(1, max_epochs + 1):
         try:
-            beta = 0.5
+            beta = 1
 
             train_loss = train(model, 
                                 train_loader, 

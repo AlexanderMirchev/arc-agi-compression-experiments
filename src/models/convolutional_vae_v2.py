@@ -92,7 +92,7 @@ def main():
     model = ConvolutionalVAEV2(
         in_channels=10, 
         starting_filters=64, 
-        latent_dim=128,
+        latent_dim=512,
         feature_dim=[8, 8]
     ).to(device)
     
@@ -111,7 +111,7 @@ def main():
     train_loader = pipeline.create_data_loader(training_grid_pairs, batch_size=batch_size, shuffle=True)
     val_loader = pipeline.create_data_loader(validation_grid_pairs, batch_size=batch_size, shuffle=False)
     
-    optimizer = optim.AdamW(model.parameters(), lr=1e-4, weight_decay=1e-3)
+    optimizer = optim.AdamW(model.parameters(), lr=1e-4, weight_decay=1e-2)
     
     max_epochs = 100
     patience = 5

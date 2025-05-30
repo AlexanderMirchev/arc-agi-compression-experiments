@@ -81,7 +81,7 @@ def main():
     training_grid_pairs = augment_grid_pairs(training_grid_pairs, target_count=5000)
     training_grids = np.array([preprocess_grid(grid) for pair in training_grid_pairs for grid in pair])
 
-    n_components = 128
+    n_components = 256
     model = PPCA(n_components=n_components)
     model.fit(training_grids)
     model.save(f"checkpoints/ppca_{n_components}.pkl")
