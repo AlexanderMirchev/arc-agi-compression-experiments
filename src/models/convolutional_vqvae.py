@@ -225,8 +225,8 @@ def main():
     model = ConvolutionalVQVAE(
         in_channels=10, 
         starting_filters=64, 
-        num_embeddings=256,
-        embedding_dim=128,
+        num_embeddings=512,
+        embedding_dim=256,
         commitment_cost=0.25
     ).to(device)
     

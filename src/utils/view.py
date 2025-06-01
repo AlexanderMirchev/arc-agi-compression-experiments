@@ -33,35 +33,53 @@ def draw_grid(ax, matrix, title=""):
     for col in range(0, cols + 1):
         ax.plot([col-0.5, col-0.5], [0-0.5, rows-0.5], color=_grid_color, lw=1)
 
-def plot_task(id, task, test, title=""):
-    rows = len(task)
+def draw_task(task, task_id="", title="", output_recon=None, output_prediction=None):
+    training_pair_count = len(task['train'])
+    rows = max(training_pair_count, 4)
     cols = 3
     fig, axes = plt.subplots(rows, cols, figsize=(10,7))
-
-    title = title if title else f"Task {id}"
+    title = title if title else f"Task {task_id}"
     fig.suptitle(title, fontsize=16, y=1.05)
 
     axes = axes.flatten()
-    for i, pair in enumerate(task):
-        mat_inp = np.array(pair['input'])
-        mat_out = np.array(pair['output'])
+    for i, (input, output) in enumerate(task['train']):
+        mat_inp = np.array(input)
+        mat_out = np.array(output)
 
-        # Draw input grid
         draw_grid(axes[i * cols], mat_inp, f"Training Input Grid {i+1}")
         
-        # Draw output grid
         draw_grid(axes[i * cols + 1], mat_out, f"Training Output Grid {i+1}")
 
-    # Draw test input grid
-    mat_inp = np.array(test['input'])
+    test_input, test_output = task['test'][0]
+    mat_inp = np.array(test_input)
     draw_grid(axes[cols - 1], mat_inp, "Test Input Grid")
 
-    # Hide unused axes
-    for i in range(1, rows):
-        axes[i*cols + cols-1].axis('off')
+
+    mat_out = np.array(test_output)
+    draw_grid(axes[2*cols - 1], mat_out, "Test Output Grid")
+    
+    used_output_rows = 2
+
+    if output_recon is not None:
+        mat_recon = np.array(output_recon)
+        used_output_rows += 1
+        draw_grid(axes[used_output_rows*cols - 1], mat_recon, "Reconstructed Test Output Grid")
+
+    if output_prediction is not None:
+        mat_pred = np.array(output_prediction)
+        used_output_rows += 1
+        draw_grid(axes[used_output_rows*cols - 1], mat_pred, "Predicted Output Grid")
+        
+    for i in range(used_output_rows + 1, rows):
+        axes[i*cols -1].axis('off')
+    
+    for i in range(training_pair_count, rows):
+        for j in range(cols - 1):
+            axes[j + i*cols].axis('off')
 
     plt.tight_layout()
     plt.show()
+
 
 def plot_losses(train_losses, val_losses):
     epochs = range(1, len(train_losses) + 1)
