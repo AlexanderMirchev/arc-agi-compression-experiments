@@ -41,7 +41,8 @@ def process_train_pairs(pipeline: Pipeline, train_pairs, model_type="vq"):
 def reconstruct_grid(pipeline: Pipeline, grid, model_type="vq"):
     pipeline.model_eval()
     with torch.no_grad():
-        z, _ = grid_to_latent(pipeline, grid, model_type)
+        z, z_size = grid_to_latent(pipeline, grid, model_type)
+        z = z.view(*z_size)
         reconstructed_grid = latent_to_grid(pipeline, z, grid, model_type)
     return reconstructed_grid
 

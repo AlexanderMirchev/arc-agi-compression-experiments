@@ -22,67 +22,28 @@ class ConvolutionalVQVAE(AbstractVQVAE):
         
         # Encoder
         self.encoder = nn.Sequential(
-            nn.Conv2d(in_channels, starting_filters, kernel_size=3, stride=2, padding=1),  # -> 30->15
+            nn.Conv2d(in_channels, starting_filters, kernel_size=3, stride=2, padding=1),  # 30x30 -> 15x15
             nn.BatchNorm2d(starting_filters),
             nn.LeakyReLU(inplace=True),
-            nn.Conv2d(starting_filters, starting_filters*2, kernel_size=3, stride=2, padding=1),  # -> 15->8
+            nn.Conv2d(starting_filters, starting_filters*2, kernel_size=3, stride=2, padding=1),  # 15x15 -> 8x8
             nn.BatchNorm2d(starting_filters*2),
             nn.LeakyReLU(inplace=True),
-            nn.Conv2d(starting_filters*2, embedding_dim, kernel_size=3, stride=1, padding=0),
+            nn.Conv2d(starting_filters*2, embedding_dim, kernel_size=3, stride=1, padding=1), # 8x8 -> 8x8
             nn.BatchNorm2d(embedding_dim),
             nn.LeakyReLU(inplace=True),
         )
         
-        # Vector Quantization
         self.codebook = VectorQuantizer(num_embeddings, embedding_dim, commitment_cost, decay=0.99)
 
         self.decoder = nn.Sequential(
-            # First transposed convolution: 6x6 -> 13x13
-            # (6-1)*2 - 2*0 + 3 = 13
-            nn.ConvTranspose2d(
-                in_channels=embedding_dim,
-                out_channels=starting_filters*2,
-                kernel_size=3,
-                stride=2,
-                padding=0
-            ),
+            nn.ConvTranspose2d(embedding_dim, starting_filters*2, kernel_size=3, stride=2, padding=1, output_padding=0),
             nn.BatchNorm2d(starting_filters*2),
             nn.LeakyReLU(inplace=True),
-            
-            # Second transposed convolution: 13x13 -> 25x25
-            # (13-1)*2 - 2*0 + 1 = 25
-            nn.ConvTranspose2d(
-                in_channels=starting_filters*2,
-                out_channels=starting_filters,
-                kernel_size=1,
-                stride=2,
-                padding=0
-            ),
+            nn.ConvTranspose2d(starting_filters*2, starting_filters, kernel_size=3, stride=2, padding=1, output_padding=1),
             nn.BatchNorm2d(starting_filters),
             nn.LeakyReLU(inplace=True),
-            
-            # Third transposed convolution: 25x25 -> 30x30
-            # Fixed size increase: 25+5 = 30
-            nn.ConvTranspose2d(
-                in_channels=starting_filters,
-                out_channels=starting_filters//2,
-                kernel_size=6,
-                stride=1,
-                padding=0,
-                output_padding=0
-            ),
-            nn.BatchNorm2d(starting_filters//2),
-            nn.LeakyReLU(inplace=True),
-            
-            # Final layer: Channel adjustment while maintaining size
-            nn.Conv2d(  # Using Conv2d, not ConvTranspose2d for final size preservation
-                in_channels=starting_filters//2,
-                out_channels=in_channels,
-                kernel_size=1,
-                stride=1,
-                padding=0
-            ),
-            nn.Sigmoid() 
+            nn.ConvTranspose2d(starting_filters, in_channels, kernel_size=3, padding=1),
+            nn.Sigmoid(),
         )
     
     def encode(self, x):
@@ -112,26 +73,21 @@ class VectorQuantizer(nn.Module):
         self.register_buffer("ema_w", torch.randn(num_embeddings, embedding_dim))
 
     def forward(self, inputs):
-        # BCHW -> BHWC
         inputs = inputs.permute(0, 2, 3, 1).contiguous()
         input_shape = inputs.shape
         flat_input = inputs.view(-1, self.embedding_dim)
 
-        # Compute distances
         distances = (
             torch.sum(flat_input**2, dim=1, keepdim=True)
             - 2 * torch.matmul(flat_input, self.embedding.t())
             + torch.sum(self.embedding**2, dim=1)
         )
 
-        # Get encoding indices
         encoding_indices = torch.argmin(distances, dim=1)
         encodings = F.one_hot(encoding_indices, self.num_embeddings).type(flat_input.dtype)
 
-        # Quantize
         quantized = torch.matmul(encodings, self.embedding).view(input_shape)
 
-        # EMA updates
         if self.training:
             encodings_sum = encodings.sum(0)
             ema_cluster_size = self.ema_cluster_size * self.decay + (1 - self.decay) * encodings_sum
@@ -146,15 +102,12 @@ class VectorQuantizer(nn.Module):
 
             self.embedding.data = self.ema_w / cluster_size.unsqueeze(1)
 
-        # Loss
         e_latent_loss = F.mse_loss(quantized.detach(), inputs)
         loss = self.commitment_cost * e_latent_loss
 
-        # Preserve gradients
         quantized = inputs + (quantized - inputs).detach()
         quantized = quantized.permute(0, 3, 1, 2).contiguous()
 
-        # Perplexity
         avg_probs = torch.mean(encodings, dim=0)
         perplexity = torch.exp(-torch.sum(avg_probs * torch.log(avg_probs + 1e-10)))
 
@@ -170,8 +123,7 @@ def codebook_usage(model, data_loader, device):
         for input, output in data_loader:
             in_out = torch.cat((input, output), dim=0).to(device)
 
-            # Get encoder outputs
-            z_e = model.encode(in_out)  # shape: (B, C, H, W)
+            z_e = model.encode(in_out) 
 
             # Flatten to (B*H*W, C)
             z_e_flat = z_e.permute(0, 2, 3, 1).contiguous().view(-1, codebook.embedding_dim)
@@ -210,15 +162,11 @@ def postprocess_grid(grid, grid_original):
     return reverse_scaling(grid_original, grid)
 
 def main():
-    # Set random seed for reproducibility
     torch.manual_seed(42)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    # print(f"Using device: {device}")
     
-    # Load the data
     training_data, validation_data = get_grids(filepath="data/training")
 
-    # print([pair for task in training_data.values() for pairs in task.values() for pair in pairs][0])
     training_grid_pairs = [pair for task in training_data.values() for pairs in task.values() for pair in pairs]
     validation_grid_pairs = [pair for task in validation_data.values() for pairs in task.values() for pair in pairs]
 
@@ -226,7 +174,7 @@ def main():
         in_channels=10, 
         starting_filters=64, 
         num_embeddings=512,
-        embedding_dim=256,
+        embedding_dim=64,
         commitment_cost=0.25
     ).to(device)
     
@@ -256,19 +204,15 @@ def main():
     val_losses = []
     for epoch in range(1, max_epochs + 1):
         try:
-            beta = 1
-
             train_loss = train(model, 
                                 train_loader, 
                                 optimizer=optimizer, 
                                 device=device, 
-                                beta=beta, 
                                 epoch=epoch)
             
             val_loss = validate(model, 
                                 val_loader, 
                                 device=device, 
-                                beta=beta, 
                                 epoch=epoch)
             
             codebook_usage(model, train_loader, device)

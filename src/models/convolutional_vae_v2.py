@@ -20,15 +20,14 @@ class ConvolutionalVAEV2(AbstractVAE):
         self.feature_dim = feature_dim
         self.starting_filters = starting_filters
 
-        # Encoder
         self.encoder = nn.Sequential(
-            nn.Conv2d(in_channels, starting_filters, kernel_size=3, stride=2, padding=1),  # -> 30->15
+            nn.Conv2d(in_channels, starting_filters, kernel_size=3, stride=2, padding=1),  # 30x30 -> 15x15
             nn.BatchNorm2d(starting_filters),
             nn.LeakyReLU(inplace=True),
-            nn.Conv2d(starting_filters, starting_filters*2, kernel_size=3, stride=2, padding=1),  # -> 15->8
+            nn.Conv2d(starting_filters, starting_filters*2, kernel_size=3, stride=2, padding=1),  # 15x15 -> 8x8
             nn.BatchNorm2d(starting_filters*2),
             nn.LeakyReLU(inplace=True),
-            nn.Conv2d(starting_filters*2, starting_filters*4, kernel_size=3, stride=1, padding=1),  # -> 8x8
+            nn.Conv2d(starting_filters*2, starting_filters*4, kernel_size=3, stride=1, padding=1),  # 8x8 -> 8x8
             nn.BatchNorm2d(starting_filters*4),
             nn.LeakyReLU(inplace=True),
         )
@@ -38,7 +37,6 @@ class ConvolutionalVAEV2(AbstractVAE):
         self.fc_mu = nn.Linear(self.flatten_dim, latent_dim)
         self.fc_logvar = nn.Linear(self.flatten_dim, latent_dim)
 
-        # Decoder
         self.fc_decode = nn.Linear(latent_dim, self.flatten_dim)
         self.decoder = nn.Sequential(
             nn.ConvTranspose2d(starting_filters*4, starting_filters*2, kernel_size=3, stride=2, padding=1, output_padding=0),
@@ -82,7 +80,6 @@ def postprocess_grid(grid, grid_original):
 def main():
     torch.manual_seed(42)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    # print(f"Using device: {device}")
     
     training_data, validation_data = get_grids(filepath="data/training")
 

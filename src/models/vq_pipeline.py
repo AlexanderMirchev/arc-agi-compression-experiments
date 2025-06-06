@@ -32,7 +32,7 @@ def get_compression_functions(saved_model_path):
         starting_filters=64, 
         num_embeddings=256,
         embedding_dim=64,
-        commitment_cost=0.1,
+        commitment_cost=0.25,
     ).to(device)
 
     checkpoint = torch.load(saved_model_path, map_location=device)
