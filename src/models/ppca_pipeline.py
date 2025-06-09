@@ -57,13 +57,13 @@ def main():
     
     training_data, validation_data = get_grids(filepath="data/training")
 
-    n_components = 128
+    n_components = 512
     filename = f"checkpoints/ppca_{n_components}.pkl"
 
     model = FullyConnectedVAE(
         input_dim=n_components,
         hidden_dim=1024,
-        latent_dim=64
+        latent_dim=128
     ).to(device)
     
     training_grid_pairs = [pair for task in training_data.values() for pairs in task.values() for pair in pairs]
@@ -84,7 +84,7 @@ def main():
     train_loader = pipeline.create_data_loader(training_grid_pairs, batch_size=batch_size, shuffle=True)
     val_loader = pipeline.create_data_loader(validation_grid_pairs, batch_size=batch_size, shuffle=False)
     
-    optimizer = optim.AdamW(model.parameters(), lr=1e-3, weight_decay=1e-2)
+    optimizer = optim.AdamW(model.parameters(), lr=1e-4, weight_decay=1e-2)
     
     max_epochs = 100
     patience = 5

@@ -30,23 +30,11 @@ def matches_example_grid(decoded_grid, example_grid):
     return (decoded_grid.shape == grid.shape and (decoded_grid == grid).mean() == 1.0)
     
 def prepare_latent_data(z_example_grids, z_all):
-    z_all_np = z_all.detach().cpu().numpy()
+    z_all_np = z_all
     z_example_np = z_example_grids.detach().cpu().numpy()
     z_samples = sample_nearby(z_example_np, num_samples_per_point=500, std_dev=0.1, random_seed=42)
     return z_all_np, z_example_np, z_samples
 
-def label_decoded_samples(z_samples, example_grids, pipeline, model_type):
-    matched_z = []
-    labels = []
-    for z in z_samples:
-        z_tensor = torch.from_numpy(z).float()
-        # issue here - doesn't work with different example grid sizes
-        decoded = latent_to_grid(pipeline, z_tensor, example_grids[0], model_type)
-        label = find_matching_example_grid_id(decoded, example_grids)
-        if label != -1:
-            matched_z.append(z)
-            labels.append(label)
-    return np.array(matched_z), labels
 
 def label_decoded_samples_single_grid(z_samples, example_grid, label, pipeline, model_type):
     matched_z = []

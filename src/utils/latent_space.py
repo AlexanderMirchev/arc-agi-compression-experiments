@@ -3,9 +3,12 @@ import numpy as np
 from models.pipeline import Pipeline
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
-def grid_to_latent(pipeline: Pipeline, grid, model_type="vq"):
+def grid_to_latent(pipeline: Pipeline, grid, model_type="vq", only_preprocess=False):
     grid = pipeline.preprocess_and_compress(grid)
     z = grid
+    if only_preprocess:
+        return z, grid.size()
+    
     if model_type == 'vq':
         z = pipeline.encode(grid.unsqueeze(0).to(device))
     else:
@@ -16,8 +19,11 @@ def grid_to_latent(pipeline: Pipeline, grid, model_type="vq"):
 
     return z_flat, z_size
 
-def latent_to_grid(pipeline: Pipeline, z, expected_output, model_type="vq"):
+def latent_to_grid(pipeline: Pipeline, z, expected_output, model_type="vq", only_postprocess=False):
+    if only_postprocess:
+        return pipeline.decompress_and_postprocess(z, expected_output)
     decoded = z
+
     if model_type == 'vq':
         z_quantized, _, _ = pipeline.model.quantize(z.to(device))
         decoded = pipeline.decode(z_quantized)
@@ -38,12 +44,12 @@ def process_train_pairs(pipeline: Pipeline, train_pairs, model_type="vq"):
     
     return z_inputs, z_diffs, z_size
 
-def reconstruct_grid(pipeline: Pipeline, grid, model_type="vq"):
+def reconstruct_grid(pipeline: Pipeline, grid, model_type="vq", first_layer_only=False):
     pipeline.model_eval()
     with torch.no_grad():
-        z, z_size = grid_to_latent(pipeline, grid, model_type)
+        z, z_size = grid_to_latent(pipeline, grid, model_type, only_preprocess=first_layer_only)
         z = z.view(*z_size)
-        reconstructed_grid = latent_to_grid(pipeline, z, grid, model_type)
+        reconstructed_grid = latent_to_grid(pipeline, z, grid, model_type, only_postprocess=first_layer_only)
     return reconstructed_grid
 
 def extract_single_object_grids(grid):

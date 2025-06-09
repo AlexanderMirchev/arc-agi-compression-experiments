@@ -73,7 +73,7 @@ def main():
     training_grid_pairs = [pair for task in training_data.values() for pairs in task.values() for pair in pairs]
     validation_grid_pairs = [pair for task in validation_data.values() for pairs in task.values() for pair in pairs]
 
-    input_dim = 6*6*64
+    input_dim = 8*8*64
     model = FullyConnectedVAE(
         input_dim=input_dim,
         hidden_dim=1024,
@@ -85,7 +85,7 @@ def main():
     training_grid_pairs = augment_grid_pairs(training_grid_pairs, target_count=5000)
     # print(f"Loaded {len(training_grid_pairs)} (after augmentation) training grid pairs and {len(validation_grid_pairs)} validation grid pairs.")
 
-    compress_fn, decompress_fn = get_compression_functions('checkpoints/conv_vqvae_6x6x64_b2.pt')
+    compress_fn, decompress_fn = get_compression_functions('checkpoints/conv_vqvae_l64_c512.pt')
 
     pipeline = Pipeline(
         model=model,
@@ -112,7 +112,7 @@ def main():
 
     for epoch in range(1, max_epochs + 1):
         try:
-            beta = 0.5
+            beta = 5.0
 
             train_loss = train(model, 
                                train_loader, 
